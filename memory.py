@@ -48,6 +48,7 @@ def mouseclick(pos):
                     card[2] = True
                     last_try = card
                     exposed_count = 1
+                    moves += 1
     elif exposed_count == 1:
         for card in deck:
             if 0 < (x - card[0]) < CARD_WIDTH:
@@ -58,6 +59,7 @@ def mouseclick(pos):
                         last_try[3] = True
                         card[3] = True
                         guessed_pairs += 1
+                    moves += 1
     else:
         for card in deck:
             if 0 < (x - card[0]) < CARD_WIDTH:
@@ -66,12 +68,13 @@ def mouseclick(pos):
                     card[2] = True
                     last_try = card
                     exposed_count = 1
-    moves += 1
-    l.set_text("Moves = " + str(moves))
+                    moves += 1
+    
                         
 # cards are logically 50x100 pixels in size    
 def draw(canvas):
     for card in deck:
+        l.set_text("Moves = " + str(moves // 2))
         if card[2]:
             canvas.draw_text(str(card[1]), 
                          (card[0] + IDENT_1, HEIGHT - IDENT_2), 
