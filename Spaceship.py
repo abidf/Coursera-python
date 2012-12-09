@@ -12,9 +12,11 @@ time = 0
 
 #constants
 d_angle_vel = math.pi/30 #one turn in second
-acc = 3/60 # 10 pxs/sec in sec
+acc = 7/60 # 10 pxs/sec in sec
 dec = .4/60 # 40% in sec 
 CLOCKWISE = {simplegui.KEY_MAP["left"] : False, simplegui.KEY_MAP["right"] : True}
+ROCK_AV_LIM = (-math.pi/15, math.pi/15)
+ROCK_V_LIM = (-5, 5)
 
 
 class ImageInfo:
@@ -142,8 +144,15 @@ class Ship:
         else:
             sound.stop()
             ship_thrust_sound.rewind()
-                
-    
+    def shoot(self):
+        global a_missile
+        vector = angle_to_vector(self.angle)
+        start_x = self.pos[0] + self.image_center[0] * vector[0]
+        start_y = self.pos[1] + self.image_center[0] * vector[1]
+        x_vel = self.vel[0] + math.sqrt(2) * vector[0]
+        y_vel = self.vel[1] + math.sqrt(2) * vector[1]
+        a_missile = Sprite([start_x, start_y], [x_vel, y_vel], 0, 0, missile_image, missile_info, missile_sound)
+
 # Sprite class
 class Sprite:
     def __init__(self, pos, vel, ang, ang_vel, image, info, sound = None):
@@ -163,10 +172,13 @@ class Sprite:
             sound.play()
    
     def draw(self, canvas):
-        canvas.draw_circle(self.pos, self.radius, 1, "Red", "Red")
-    
+        #canvas.draw_circle(self.pos, self.radius, 1, "Red", "Red")
+        canvas.draw_image(self.image, self.image_center, self.image_size, 
+                          self.pos, self.image_size, self.angle)
     def update(self):
-        pass        
+        self.pos[0] = (self.pos[0] + self.vel[0]) % width
+        self.pos[1] = (self.pos[1] + self.vel[1]) % width
+        self.angle += self.angle_vel
 
            
 def draw(canvas):
@@ -195,7 +207,12 @@ def draw(canvas):
             
 # timer handler that spawns a rock    
 def rock_spawner():
-    pass
+    global a_rock
+    x_vel = random.random() * (ROCK_V_LIM[1] - ROCK_V_LIM[0]) + ROCK_V_LIM[0]
+    y_vel = random.random() * (ROCK_V_LIM[1] - ROCK_V_LIM[0]) + ROCK_V_LIM[0]
+    angle = random.random() * 2 * math.pi
+    angle_vel = random.random() * (ROCK_AV_LIM[1] - ROCK_AV_LIM[0]) + ROCK_AV_LIM[0]
+    a_rock = Sprite([width * random.random(), height * random.random()], [x_vel, y_vel], angle,angle_vel, asteroid_image, asteroid_info)
     
 def sound_restart():
     ship_thrust_sound.rewind()
@@ -207,6 +224,8 @@ def down(key):
         my_ship.change_angle_vel(CLOCKWISE[key], True)
     if key == simplegui.KEY_MAP["up"]:
         my_ship.thrusters_switch()
+    if key == simplegui.KEY_MAP["space"]:
+        my_ship.shoot()
         
 def up(key):
     if key in CLOCKWISE.keys():
