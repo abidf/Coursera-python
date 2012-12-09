@@ -12,6 +12,8 @@ time = 0
 
 #constants
 d_angle_vel = math.pi/30 #one turn in second
+acc = 3/60 # 10 pxs/sec in sec
+dec = .4/60 # 40% in sec 
 CLOCKWISE = {simplegui.KEY_MAP["left"] : False, simplegui.KEY_MAP["right"] : True}
 
 
@@ -106,6 +108,12 @@ class Ship:
         canvas.draw_image(self.image, self.image_center, self.image_size, 
                           self.pos, self.image_size, self.angle)
     def update(self):
+        self.vel[0] *= (1-dec)
+        self.vel[1] *= (1-dec)
+        if self.thrust:
+            vector = angle_to_vector(self.angle)
+            self.vel[0] += acc * vector[0]
+            self.vel[1] += acc * vector[1]
         self.pos[0] = (self.pos[0] + self.vel[0]) % width
         self.pos[1] = (self.pos[1] + self.vel[1]) % height
         self.angle += self.angle_vel
@@ -120,6 +128,10 @@ class Ship:
                 self.angle_vel -= d_angle_vel
             else:
                 self.angle_vel += d_angle_vel
+    def thrusters_switch(self):
+        self.thrust = not self.thrust
+                
+    
 # Sprite class
 class Sprite:
     def __init__(self, pos, vel, ang, ang_vel, image, info, sound = None):
@@ -177,11 +189,15 @@ def rock_spawner():
 #key handlers
 def down(key):
     if key in CLOCKWISE.keys():
-        my_ship.change_angle_vel(CLOCKWISE[key], True)    
+        my_ship.change_angle_vel(CLOCKWISE[key], True)
+    if key == simplegui.KEY_MAP["up"]:
+        my_ship.thrusters_switch()
         
 def up(key):
     if key in CLOCKWISE.keys():
         my_ship.change_angle_vel(CLOCKWISE[key], False)  
+    if key == simplegui.KEY_MAP["up"]:
+        my_ship.thrusters_switch()
     
 # initialize frame
 frame = simplegui.create_frame("Asteroids", width, height)
