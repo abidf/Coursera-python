@@ -101,11 +101,16 @@ class Ship:
         self.image = image
         self.image_center = info.get_center()
         self.image_size = info.get_size()
+        self.thrusted_image_center = [self.image_center[0] + self.image_size[0],
+                                      self.image_center[1]]
         self.radius = info.get_radius()
         
     def draw(self,canvas):
-        #canvas.draw_circle(self.pos, self.radius, 1, "White", "White")
-        canvas.draw_image(self.image, self.image_center, self.image_size, 
+        if self.thrust:
+            canvas.draw_image(self.image, self.thrusted_image_center, self.image_size, 
+                          self.pos, self.image_size, self.angle)
+        else:
+            canvas.draw_image(self.image, self.image_center, self.image_size, 
                           self.pos, self.image_size, self.angle)
     def update(self):
         self.vel[0] *= (1-dec)
@@ -130,6 +135,13 @@ class Ship:
                 self.angle_vel += d_angle_vel
     def thrusters_switch(self):
         self.thrust = not self.thrust
+        if self.thrust:
+            ship_thrust_sound.play()
+            sound.start()
+            #ship_thrust_sound.rewind()
+        else:
+            sound.stop()
+            ship_thrust_sound.rewind()
                 
     
 # Sprite class
@@ -185,6 +197,9 @@ def draw(canvas):
 def rock_spawner():
     pass
     
+def sound_restart():
+    ship_thrust_sound.rewind()
+    ship_thrust_sound.play()
     
 #key handlers
 def down(key):
@@ -213,6 +228,7 @@ frame.set_keydown_handler(down)
 frame.set_keyup_handler(up)
 
 timer = simplegui.create_timer(1000.0, rock_spawner)
+sound = simplegui.create_timer(25000.0, sound_restart)
 
 # get things rolling
 timer.start()
