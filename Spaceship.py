@@ -200,6 +200,14 @@ def draw(canvas):
     a_rock.draw(canvas)
     a_missile.draw(canvas)
     
+    # draw lives and score
+    
+    canvas.draw_text("Lives", [20, 30], 20, "White")
+    canvas.draw_text(str(lives), [20, 60], 20, "White")
+    
+    canvas.draw_text("Lives", [720, 30], 20, "White")
+    canvas.draw_text(str(lives), [720, 60], 20, "White")
+    
     # update ship and sprites
     my_ship.update()
     a_rock.update()
