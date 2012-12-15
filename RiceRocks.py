@@ -85,9 +85,13 @@ def dist(p,q):
     return math.sqrt((p[0]-q[0])**2+(p[1]-q[1])**2)
 
 def process_sprite_set(sprite_set, canvas):
+    sprites_to_remove = set()
     for sprite in sprite_set:
         sprite.draw(canvas)
-        sprite.update()
+        if sprite.update():
+            sprites_to_remove.add(sprite)
+    if sprites_to_remove:
+        sprite_set.difference_update(sprites_to_remove)
         
 def group_collide(sprite_set, other):
     sprites_to_remove = set()
@@ -99,6 +103,14 @@ def group_collide(sprite_set, other):
         return True
     else:
         return False
+    
+def group_to_group_collide(group_one, group_two):
+    sprites_to_remove = set()
+    for sprite in group_one:
+        if group_collide(group_two, sprite):
+            sprites_to_remove.add(sprite)
+    group_one.difference_update(sprites_to_remove)
+    return len(sprites_to_remove)
 
 # Ship class
 class Ship:
@@ -109,10 +121,12 @@ class Ship:
         self.thrust = False
         self.angle = angle
         self.angle_vel = 0
+        self.is_shooting = False
         self.image = image
         self.image_center = info.get_center()
         self.image_size = info.get_size()
         self.radius = info.get_radius()
+        self.time_from_last_missile = 0    
         
     def draw(self,canvas):
         if self.thrust:
@@ -139,6 +153,12 @@ class Ship:
             
         self.vel[0] *= .99
         self.vel[1] *= .99
+        
+        #shooting BANG_BANG_PEW_PEW!
+        if self.is_shooting:
+            if self.time_from_last_missile % 30 == 0:
+                self.shoot()
+            self.time_from_last_missile += 1
 
     def set_thrust(self, on):
         self.thrust = on
@@ -155,17 +175,24 @@ class Ship:
         self.angle_vel -= .05
         
     def shoot(self):
-        global a_missile
         forward = angle_to_vector(self.angle)
         missile_pos = [self.pos[0] + self.radius * forward[0], self.pos[1] + self.radius * forward[1]]
         missile_vel = [self.vel[0] + 6 * forward[0], self.vel[1] + 6 * forward[1]]
         a_missile = Sprite(missile_pos, missile_vel, self.angle, 0, missile_image, missile_info, missile_sound)
-    
+        missiles.add(a_missile)	
+        
     def get_radius(self):
         return self.radius
     
     def get_position(self):
-        return self.pos    
+        return self.pos   
+    
+    def start_shooting(self):
+        self.is_shooting = True
+        self.time_from_last_missile = 0
+        
+    def stop_shooting(self):
+        self.is_shooting = False
     
 # Sprite class
 class Sprite:
@@ -196,6 +223,12 @@ class Sprite:
         # update position
         self.pos[0] = (self.pos[0] + self.vel[0]) % width
         self.pos[1] = (self.pos[1] + self.vel[1]) % height
+        if self.lifespan:
+            if self.age > self.lifespan:
+                return True
+            else:	
+                self.age += 1
+        return False
         
     def get_radius(self):
         return self.radius
@@ -217,7 +250,7 @@ def keydown(key):
         elif key == simplegui.KEY_MAP['up']:
             my_ship.set_thrust(True)
         elif key == simplegui.KEY_MAP['space']:
-            my_ship.shoot()
+            my_ship.start_shooting()
         
 def keyup(key):
     if started:
@@ -227,6 +260,8 @@ def keyup(key):
             my_ship.decrement_angle_vel()
         elif key == simplegui.KEY_MAP['up']:
             my_ship.set_thrust(False)
+        elif key == simplegui.KEY_MAP['space']:
+            my_ship.stop_shooting()
         
 # mouseclick handlers that reset UI and conditions whether splash image is drawn
 def click(pos):
@@ -239,7 +274,7 @@ def click(pos):
         started = True
 
 def draw(canvas):
-    global time, started, lives
+    global time, started, lives, score
     
     # animiate background
     time += 1
@@ -261,15 +296,19 @@ def draw(canvas):
     # draw ship and sprites
     my_ship.draw(canvas)
     process_sprite_set(rocks, canvas)
-    a_missile.draw(canvas)
+    process_sprite_set(missiles, canvas)
     
-    # update ship and sprites
+    # update ship
     my_ship.update()
-    a_missile.update()
 
     #ship-asteroide collides
     if group_collide(rocks, my_ship):
         lives -= 1
+    if lives == 0:
+        started = False
+    
+    #missiles-rocks collides
+    score += group_to_group_collide(rocks, missiles)
     
     # draw splash screen if not started
     if not started:
@@ -292,8 +331,8 @@ frame = simplegui.create_frame("Asteroids", width, height)
 my_ship = Ship([width / 2, height / 2], [0, 0], 0, ship_image, ship_info)
 ##a_rock = Sprite([width / 3, height / 3], [1, 1], 0, .1, asteroid_image, asteroid_info)
 rocks = set()
-a_missile = Sprite([2 * width / 3, 2 * height / 3], [-1,1], 0, 0, missile_image, missile_info, missile_sound)
-
+##a_missile = Sprite([2 * width / 3, 2 * height / 3], [-1,1], 0, 0, missile_image, missile_info, missile_sound)
+missiles = set()
 
 # register handlers
 frame.set_keyup_handler(keyup)
